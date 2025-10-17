@@ -2,24 +2,31 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient as createBrowserClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
+// Mock Supabase client for development when env vars are not set
+const createMockClient = () => ({
+  from: () => ({
+    select: () => ({
+      or: () => ({
+        or: () => ({
+          limit: () => Promise.resolve({ data: [], error: null })
+        })
+      })
+    })
+  })
+});
+
 export function createUnauthenticatedClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl) {
+  if (!supabaseUrl || supabaseUrl === 'your_supabase_project_url_here') {
     console.warn('NEXT_PUBLIC_SUPABASE_URL is not set. Using placeholder values for development.');
-    return createBrowserClient(
-      'https://placeholder.supabase.co',
-      'placeholder-anon-key'
-    );
+    return createMockClient() as any;
   }
 
-  if (!supabaseAnonKey) {
+  if (!supabaseAnonKey || supabaseAnonKey === 'your_supabase_anon_key_here') {
     console.warn('NEXT_PUBLIC_SUPABASE_ANON_KEY is not set. Using placeholder values for development.');
-    return createBrowserClient(
-      supabaseUrl,
-      'placeholder-anon-key'
-    );
+    return createMockClient() as any;
   }
 
   return createBrowserClient(supabaseUrl, supabaseAnonKey);
