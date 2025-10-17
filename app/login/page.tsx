@@ -34,19 +34,48 @@ export default function LoginPage() {
       }
 
       if (data.user) {
+        console.log('🔍 Checking admin permissions for user:', data.user.id);
+        console.log('🔍 User email:', data.user.email);
+        
         const { data: adminData, error: adminError } = await supabase
           .from('admin_users')
           .select('*')
           .eq('id', data.user.id)
           .maybeSingle();
 
-        console.log('User ID:', data.user.id);
-        console.log('Admin Data:', adminData);
-        console.log('Admin Error:', adminError);
+        console.log('🔍 Admin query result:', { adminData, adminError });
+        
+        // Also check by email as fallback
+        if (!adminData && !adminError) {
+          console.log('🔍 No admin found by ID, checking by email...');
+          const { data: adminByEmail, error: emailError } = await supabase
+            .from('admin_users')
+            .select('*')
+            .eq('email', data.user.email)
+            .maybeSingle();
+          
+          console.log('🔍 Admin by email result:', { adminByEmail, emailError });
+          
+          if (adminByEmail && !emailError) {
+            // Update the admin_users record with the correct user ID
+            const { error: updateError } = await supabase
+              .from('admin_users')
+              .update({ id: data.user.id })
+              .eq('email', data.user.email);
+            
+            if (!updateError) {
+              console.log('✅ Updated admin user ID');
+              router.push('/admin');
+              router.refresh();
+              return;
+            }
+          }
+        }
 
         if (!adminData) {
+          console.log('❌ No admin permissions found');
           await supabase.auth.signOut();
-          setError('No tienes permisos de administrador');
+          setError('No tienes permisos de administrador. Si eres el administrador, ve a /setup para crear el usuario admin.');
           setLoading(false);
           return;
         }

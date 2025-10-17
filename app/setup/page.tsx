@@ -1,12 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
 export default function SetupPage() {
+  const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [existingAdmins, setExistingAdmins] = useState<any[]>([]);
   const router = useRouter();
+
+  useEffect(() => {
+    checkExistingAdmins();
+  }, []);
+
+  const checkExistingAdmins = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('*');
+      
+      if (data) {
+        setExistingAdmins(data);
+        console.log('🔍 Existing admins:', data);
+      }
+    } catch (error) {
+      console.error('Error checking admins:', error);
+    }
+  };
 
   const createAdmin = async () => {
     setLoading(true);
@@ -16,6 +38,9 @@ export default function SetupPage() {
       });
       const data = await response.json();
       setResult(data);
+      if (data.success) {
+        checkExistingAdmins();
+      }
     } catch (error: any) {
       setResult({ error: error.message });
     }
@@ -33,6 +58,19 @@ export default function SetupPage() {
           <p className="text-gray-600">
             Haz clic en el botón para crear el usuario administrador.
           </p>
+
+          {existingAdmins.length > 0 && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <p className="text-sm font-semibold text-green-900 mb-2">
+                Usuarios administradores existentes:
+              </p>
+              {existingAdmins.map((admin, index) => (
+                <p key={index} className="text-sm text-green-700 font-mono">
+                  {admin.email} (ID: {admin.id})
+                </p>
+              ))}
+            </div>
+          )}
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm font-semibold text-blue-900 mb-2">
@@ -54,6 +92,13 @@ export default function SetupPage() {
             {loading ? 'Creando usuario...' : 'Crear Usuario Admin'}
           </button>
 
+          <button
+            onClick={checkExistingAdmins}
+            className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition"
+          >
+            Verificar Usuarios Existentes
+          </button>
+
           {result && (
             <div className={`p-4 rounded-lg ${
               result.error
@@ -66,6 +111,11 @@ export default function SetupPage() {
               <p className="text-sm">
                 {result.error || result.message}
               </p>
+              {result.userId && (
+                <p className="text-xs mt-2 font-mono">
+                  User ID: {result.userId}
+                </p>
+              )}
               {result.success && (
                 <button
                   onClick={() => router.push('/login')}
