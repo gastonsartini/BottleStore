@@ -12,12 +12,20 @@ export default async function HomePage() {
 
   console.log('🔍 Fetching featured products...');
   
-  const { data: featuredProducts } = await supabase
-    .from('products')
-    .select('*')
-    .or('featured.eq.true,featured.is.null')
-    .or('active.eq.true,active.is.null')
-    .limit(6);
+  let featuredProducts = null;
+  
+  try {
+    const { data } = await supabase
+      .from('products')
+      .select('*')
+      .or('featured.eq.true,featured.is.null')
+      .or('active.eq.true,active.is.null')
+      .limit(6);
+    featuredProducts = data;
+  } catch (error) {
+    console.warn('Failed to fetch featured products:', error);
+    featuredProducts = [];
+  }
 
   console.log('📦 Featured products result:', { featuredProducts, count: featuredProducts?.length });
 

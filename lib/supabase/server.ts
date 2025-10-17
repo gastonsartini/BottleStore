@@ -6,8 +6,20 @@ export function createUnauthenticatedClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Missing Supabase environment variables');
+  if (!supabaseUrl) {
+    console.warn('NEXT_PUBLIC_SUPABASE_URL is not set. Using placeholder values for development.');
+    return createBrowserClient(
+      'https://placeholder.supabase.co',
+      'placeholder-anon-key'
+    );
+  }
+
+  if (!supabaseAnonKey) {
+    console.warn('NEXT_PUBLIC_SUPABASE_ANON_KEY is not set. Using placeholder values for development.');
+    return createBrowserClient(
+      supabaseUrl,
+      'placeholder-anon-key'
+    );
   }
 
   return createBrowserClient(supabaseUrl, supabaseAnonKey);
